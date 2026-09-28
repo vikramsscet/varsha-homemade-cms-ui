@@ -1,9 +1,10 @@
 import { Folder, LayoutDashboard, Package } from 'lucide-react'
+import { NavLink } from 'react-router-dom'
 
 const navigationItems = [
-  { label: 'Dashboard', icon: LayoutDashboard, active: true },
-  { label: 'Categories', icon: Folder, active: false },
-  { label: 'Products', icon: Package, active: false },
+  { label: 'Dashboard', icon: LayoutDashboard, to: '/dashboard', end: true },
+  { label: 'Categories', icon: Folder, to: '/categories' },
+  { label: 'Products', icon: Package, to: '/products' },
 ]
 
 function Sidebar() {
@@ -19,20 +20,22 @@ function Sidebar() {
       </div>
 
       <nav aria-label="Main navigation" className="mt-6 space-y-1">
-        {navigationItems.map(({ label, icon: Icon, active }) => (
-          <button
+        {navigationItems.map(({ label, icon: Icon, to, end }) => (
+          <NavLink
             key={label}
-            type="button"
-            aria-current={active ? 'page' : undefined}
-            className={`flex w-full items-center gap-3 rounded-md px-3 py-2.5 text-left text-sm transition-colors ${
-              active
+            to={to}
+            end={end}
+            className={({ isActive }) =>
+              `flex w-full items-center gap-3 rounded-md px-3 py-2.5 text-left text-sm transition-colors ${
+                isActive
                 ? 'bg-primary/10 font-medium text-primary'
                 : 'text-muted hover:bg-background hover:text-text'
-            }`}
+              }`
+            }
           >
             <Icon size={18} strokeWidth={1.8} aria-hidden="true" />
             <span>{label}</span>
-          </button>
+          </NavLink>
         ))}
       </nav>
     </aside>
