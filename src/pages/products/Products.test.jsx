@@ -2,11 +2,12 @@ import { fireEvent, render, screen } from '@testing-library/react'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { MemoryRouter } from 'react-router-dom'
 import Products from './Products.jsx'
-import { cloneProduct, getProducts } from '../../services/product.service.js'
+import { cloneProduct, deleteProduct, getProducts } from '../../services/product.service.js'
 
 vi.mock('../../services/product.service.js', () => ({
   getProducts: vi.fn(),
   cloneProduct: vi.fn(),
+  deleteProduct: vi.fn(),
 }))
 
 describe('Products', () => {
@@ -52,5 +53,25 @@ describe('Products', () => {
     fireEvent.click(screen.getByRole('button', { name: /clone product/i }))
 
     expect(cloneProduct).toHaveBeenCalledWith('product-1')
+  })
+
+  it('opens a confirmation before deleting a product and calls the delete API on confirm', async () => {
+    deleteProduct.mockResolvedValue({})
+
+    render(
+      <MemoryRouter>
+        <Products />
+      </MemoryRouter>,
+    )
+
+    const deleteButton = await screen.findByRole('button', { name: /delete product homemade chakli/i })
+    fireEvent.click(deleteButton)
+
+    expect(screen.getByRole('dialog', { name: /delete product/i })).toBeInTheDocument()
+    expect(deleteProduct).not.toHaveBeenCalled()
+
+    fireEvent.click(screen.getByRole('button', { name: /delete product/i }))
+
+    expect(deleteProduct).toHaveBeenCalledWith('product-1')
   })
 })

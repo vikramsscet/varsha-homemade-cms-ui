@@ -17,6 +17,10 @@ export function updateProduct(id, data) {
 	return api.patch(`/products/${id}`, data)
 }
 
+export function deleteProduct(id) {
+	return api.delete(`/products/${id}`)
+}
+
 function extractImageList(payload) {
   if (Array.isArray(payload)) return payload
   if (Array.isArray(payload?.images)) return payload.images

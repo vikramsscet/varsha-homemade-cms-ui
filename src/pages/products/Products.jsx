@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { Image as ImageIcon, Plus, RefreshCw, X } from 'lucide-react'
-import { cloneProduct, getProducts } from '../../services/product.service.js'
+import { cloneProduct, deleteProduct, getProducts } from '../../services/product.service.js'
 
 const PAGE_SIZE = 20
 const initialPagination = { page: 1, limit: PAGE_SIZE, total: 0, totalPages: 0 }
@@ -45,9 +45,13 @@ function Products() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(false)
   const [cloneTarget, setCloneTarget] = useState(null)
+  const [deleteTarget, setDeleteTarget] = useState(null)
   const [cloneError, setCloneError] = useState('')
+  const [deleteError, setDeleteError] = useState('')
   const [isCloning, setIsCloning] = useState(false)
+  const [isDeleting, setIsDeleting] = useState(false)
   const [successMessage, setSuccessMessage] = useState('')
+  const activeModal = cloneTarget || deleteTarget
 
   useEffect(() => {
     let isCurrent = true
@@ -116,9 +120,42 @@ function Products() {
     }
   }
 
+  const handleDeleteProduct = async () => {
+    if (!deleteTarget?.id) return
+
+    setIsDeleting(true)
+    setDeleteError('')
+
+    try {
+      await deleteProduct(deleteTarget.id)
+
+      const nextProducts = products.filter((product) => product.id !== deleteTarget.id)
+      const wasLastItemOnPage = nextProducts.length === 0 && page > 1 && pagination.total <= PAGE_SIZE * (page - 1) + 1
+
+      setProducts(nextProducts)
+      setPagination((current) => ({
+        ...current,
+        total: Math.max(0, current.total - 1),
+      }))
+      setDeleteTarget(null)
+      setSuccessMessage('Product deleted successfully.')
+
+      if (wasLastItemOnPage) {
+        setPage((currentPage) => Math.max(1, currentPage - 1))
+      }
+
+      setRefreshKey((key) => key + 1)
+    } catch (requestError) {
+      console.error('Product delete failed:', requestError)
+      setDeleteError('Failed to delete product. Please try again.')
+    } finally {
+      setIsDeleting(false)
+    }
+  }
+
   return (
     <>
-      <div className="space-y-6" aria-hidden={cloneTarget ? true : undefined} inert={cloneTarget ? '' : undefined}>
+      <div className="space-y-6" aria-hidden={Boolean(activeModal)} inert={activeModal ? '' : undefined}>
         <div className="flex flex-wrap items-center justify-between gap-4">
           <h1 className="text-2xl font-semibold text-text sm:text-3xl">Products</h1>
           <div className="flex items-center gap-3">
@@ -258,7 +295,15 @@ function Products() {
                           >
                             Clone
                           </button>
-                          <button type="button" disabled className="text-muted opacity-60">
+                          <button
+                            type="button"
+                            aria-label={`Delete product ${product.title}`}
+                            onClick={() => {
+                              setDeleteError('')
+                              setDeleteTarget(product)
+                            }}
+                            className="text-muted opacity-60 hover:text-error"
+                          >
                             Delete
                           </button>
                         </div>
@@ -311,6 +356,63 @@ function Products() {
         </>
         )}
       </div>
+
+      {deleteTarget && (
+        <div className="fixed inset-0 z-50 grid place-items-center bg-text/40 p-4">
+          <section
+            role="dialog"
+            aria-modal="true"
+            aria-label="Delete product"
+            className="w-full max-w-md rounded-lg border border-border bg-surface p-5 shadow-xl"
+          >
+            <div className="flex items-start justify-between gap-3">
+              <div>
+                <h2 className="text-lg font-semibold text-text">Delete Product?</h2>
+                <p className="mt-2 text-sm text-muted">
+                  Are you sure you want to delete "{deleteTarget.title}"?
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => {
+                  setDeleteTarget(null)
+                  setDeleteError('')
+                }}
+                aria-label="Close delete dialog"
+                className="grid size-8 place-items-center rounded-md border border-border bg-surface text-text hover:bg-background focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
+              >
+                <X size={16} strokeWidth={2} aria-hidden="true" />
+              </button>
+            </div>
+
+            {deleteError && (
+              <p className="mt-4 text-sm text-error" role="alert">{deleteError}</p>
+            )}
+
+            <div className="mt-6 flex justify-end gap-3">
+              <button
+                type="button"
+                onClick={() => {
+                  setDeleteTarget(null)
+                  setDeleteError('')
+                }}
+                disabled={isDeleting}
+                className="rounded-md border border-border bg-surface px-3 py-2 text-sm font-medium text-text hover:bg-background disabled:cursor-not-allowed disabled:opacity-60"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={handleDeleteProduct}
+                disabled={isDeleting}
+                className="rounded-md bg-error px-3 py-2 text-sm font-medium text-white hover:bg-error/90 disabled:cursor-not-allowed disabled:opacity-60"
+              >
+                {isDeleting ? 'Deleting...' : 'Delete Product'}
+              </button>
+            </div>
+          </section>
+        </div>
+      )}
 
       {cloneTarget && (
         <div className="fixed inset-0 z-50 grid place-items-center bg-text/40 p-4">
