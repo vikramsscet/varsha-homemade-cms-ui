@@ -98,13 +98,16 @@ function Products() {
     setCloneError('')
 
     try {
-      await cloneProduct(cloneTarget.id)
+      setSuccessMessage('')
+      const result = await cloneProduct(cloneTarget.id)
       setCloneTarget(null)
-      setSuccessMessage('Product cloned successfully.')
+      setSuccessMessage(result?.partialFailure
+        ? 'Product cloned successfully, but some images could not be copied.'
+        : 'Product cloned successfully.')
       setRefreshKey((key) => key + 1)
     } catch (requestError) {
       console.error('Product clone failed:', requestError)
-      const backendMessage = requestError?.response?.data?.message || requestError?.response?.data?.error
+      const backendMessage = requestError?.response?.data?.message || requestError?.response?.data?.error || requestError?.message
       setCloneError(typeof backendMessage === 'string' && backendMessage.trim()
         ? backendMessage
         : 'Unable to clone product. Please try again.')
