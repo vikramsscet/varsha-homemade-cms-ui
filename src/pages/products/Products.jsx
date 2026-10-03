@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { Image as ImageIcon, Plus, RefreshCw } from 'lucide-react'
-import { getProducts } from '../../services/product.service.js'
+import { Image as ImageIcon, Plus, RefreshCw, X } from 'lucide-react'
+import { cloneProduct, getProducts } from '../../services/product.service.js'
 
 const PAGE_SIZE = 20
 const initialPagination = { page: 1, limit: PAGE_SIZE, total: 0, totalPages: 0 }
@@ -44,6 +44,10 @@ function Products() {
   const [pagination, setPagination] = useState(initialPagination)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(false)
+  const [cloneTarget, setCloneTarget] = useState(null)
+  const [cloneError, setCloneError] = useState('')
+  const [isCloning, setIsCloning] = useState(false)
+  const [successMessage, setSuccessMessage] = useState('')
 
   useEffect(() => {
     let isCurrent = true
@@ -87,31 +91,60 @@ function Products() {
   const firstItem = pagination.total === 0 ? 0 : (pagination.page - 1) * pagination.limit + 1
   const lastItem = Math.min(pagination.page * pagination.limit, pagination.total)
 
-  return (
-    <div className="space-y-6">
-      <div className="flex flex-wrap items-center justify-between gap-4">
-        <h1 className="text-2xl font-semibold text-text sm:text-3xl">Products</h1>
-        <div className="flex items-center gap-3">
-          <button
-            type="button"
-            onClick={() => setRefreshKey((key) => key + 1)}
-            disabled={loading}
-            className="inline-flex items-center gap-2 rounded-md border border-border bg-surface px-3 py-2 text-sm font-medium text-text transition-colors hover:bg-background focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary disabled:cursor-not-allowed disabled:opacity-60"
-          >
-            <RefreshCw size={16} strokeWidth={1.8} aria-hidden="true" />
-            Refresh
-          </button>
-          <Link
-            to="/products/new"
-            className="inline-flex items-center gap-2 rounded-md bg-primary px-3 py-2 text-sm font-medium text-white transition-colors hover:bg-primary-hover focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
-          >
-            <Plus size={17} strokeWidth={2} aria-hidden="true" />
-            Add Product
-          </Link>
-        </div>
-      </div>
+  const handleCloneProduct = async () => {
+    if (!cloneTarget?.id) return
 
-      {loading ? (
+    setIsCloning(true)
+    setCloneError('')
+
+    try {
+      await cloneProduct(cloneTarget.id)
+      setCloneTarget(null)
+      setSuccessMessage('Product cloned successfully.')
+      setRefreshKey((key) => key + 1)
+    } catch (requestError) {
+      console.error('Product clone failed:', requestError)
+      const backendMessage = requestError?.response?.data?.message || requestError?.response?.data?.error
+      setCloneError(typeof backendMessage === 'string' && backendMessage.trim()
+        ? backendMessage
+        : 'Unable to clone product. Please try again.')
+    } finally {
+      setIsCloning(false)
+    }
+  }
+
+  return (
+    <>
+      <div className="space-y-6" aria-hidden={cloneTarget ? true : undefined} inert={cloneTarget ? '' : undefined}>
+        <div className="flex flex-wrap items-center justify-between gap-4">
+          <h1 className="text-2xl font-semibold text-text sm:text-3xl">Products</h1>
+          <div className="flex items-center gap-3">
+            <button
+              type="button"
+              onClick={() => setRefreshKey((key) => key + 1)}
+              disabled={loading}
+              className="inline-flex items-center gap-2 rounded-md border border-border bg-surface px-3 py-2 text-sm font-medium text-text transition-colors hover:bg-background focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary disabled:cursor-not-allowed disabled:opacity-60"
+            >
+              <RefreshCw size={16} strokeWidth={1.8} aria-hidden="true" />
+              Refresh
+            </button>
+            <Link
+              to="/products/new"
+              className="inline-flex items-center gap-2 rounded-md bg-primary px-3 py-2 text-sm font-medium text-white transition-colors hover:bg-primary-hover focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
+            >
+              <Plus size={17} strokeWidth={2} aria-hidden="true" />
+              Add Product
+            </Link>
+          </div>
+        </div>
+
+        {successMessage && (
+          <div className="rounded-md border border-success/20 bg-success/10 px-3 py-2 text-sm text-success">
+            {successMessage}
+          </div>
+        )}
+
+        {loading ? (
         <div className="min-h-48 rounded-lg border border-border bg-surface p-6 text-sm text-muted" role="status">
           Loading products...
         </div>
@@ -211,6 +244,17 @@ function Products() {
                           >
                             Edit
                           </Link>
+                          <button
+                            type="button"
+                            aria-label={`Clone product ${product.title}`}
+                            onClick={() => {
+                              setCloneError('')
+                              setCloneTarget(product)
+                            }}
+                            className="font-medium text-primary hover:text-primary-hover"
+                          >
+                            Clone
+                          </button>
                           <button type="button" disabled className="text-muted opacity-60">
                             Delete
                           </button>
@@ -262,8 +306,71 @@ function Products() {
             </nav>
           </div>
         </>
+        )}
+      </div>
+
+      {cloneTarget && (
+        <div className="fixed inset-0 z-50 grid place-items-center bg-text/40 p-4">
+          <section
+            role="dialog"
+            aria-modal="true"
+            aria-label="Clone product"
+            className="w-full max-w-md rounded-lg border border-border bg-surface p-5 shadow-xl"
+          >
+            <div className="flex items-start justify-between gap-3">
+              <div>
+                <h2 className="text-lg font-semibold text-text">Clone Product?</h2>
+                <p className="mt-2 text-sm text-muted">
+                  This will create a new product based on:
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => {
+                  setCloneTarget(null)
+                  setCloneError('')
+                }}
+                aria-label="Close clone dialog"
+                className="grid size-8 place-items-center rounded-md border border-border bg-surface text-text hover:bg-background focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
+              >
+                <X size={16} strokeWidth={2} aria-hidden="true" />
+              </button>
+            </div>
+
+            <p className="mt-4 text-base font-medium text-text">{cloneTarget.title}</p>
+            <p className="mt-2 text-sm text-muted">
+              The cloned product will be created as a Draft.
+            </p>
+
+            {cloneError && (
+              <p className="mt-4 text-sm text-error" role="alert">{cloneError}</p>
+            )}
+
+            <div className="mt-6 flex justify-end gap-3">
+              <button
+                type="button"
+                onClick={() => {
+                  setCloneTarget(null)
+                  setCloneError('')
+                }}
+                disabled={isCloning}
+                className="rounded-md border border-border bg-surface px-3 py-2 text-sm font-medium text-text hover:bg-background disabled:cursor-not-allowed disabled:opacity-60"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={handleCloneProduct}
+                disabled={isCloning}
+                className="rounded-md bg-primary px-3 py-2 text-sm font-medium text-white hover:bg-primary-hover disabled:cursor-not-allowed disabled:opacity-60"
+              >
+                {isCloning ? 'Cloning...' : 'Clone Product'}
+              </button>
+            </div>
+          </section>
+        </div>
       )}
-    </div>
+    </>
   )
 }
 

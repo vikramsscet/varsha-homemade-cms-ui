@@ -15,3 +15,7 @@ export function createProduct(data) {
 export function updateProduct(id, data) {
 	return api.patch(`/products/${id}`, data)
 }
+
+export function cloneProduct(id) {
+	return api.post(`/products/${id}/clone`)
+}

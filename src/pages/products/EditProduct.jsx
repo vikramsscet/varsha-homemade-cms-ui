@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import ProductForm from '../../components/products/ProductForm.jsx'
+import ProductImageGallery from '../../components/products/ProductImageGallery.jsx'
 import { getCategories } from '../../services/category.service.js'
 import { getProduct, updateProduct } from '../../services/product.service.js'
 
@@ -157,6 +158,8 @@ function EditProduct() {
         onSubmit={handleUpdate}
         apiError={apiError}
       />
+
+      <ProductImageGallery productId={id} />
     </div>
   )
 }
