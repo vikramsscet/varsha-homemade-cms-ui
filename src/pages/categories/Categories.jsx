@@ -1,15 +1,25 @@
 import { useEffect, useState } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { Plus, RefreshCw } from 'lucide-react'
+import { useAuth } from '../../context/AuthContext.jsx'
 import { deleteCategory, getCategories } from '../../services/category.service.js'
 
 function Categories() {
+  const { isAuthenticated } = useAuth()
+  const location = useLocation()
+  const navigate = useNavigate()
   const [categories, setCategories] = useState([])
   const [status, setStatus] = useState('loading')
   const [retryKey, setRetryKey] = useState(0)
   const [categoryToDelete, setCategoryToDelete] = useState(null)
   const [isDeleting, setIsDeleting] = useState(false)
   const [deleteError, setDeleteError] = useState('')
+
+  const requireAuthentication = () => {
+    if (isAuthenticated) return true
+    navigate('/authenticate', { state: { from: location } })
+    return false
+  }
 
   useEffect(() => {
     let isCurrent = true
@@ -43,6 +53,7 @@ function Categories() {
   }, [retryKey])
 
   const handleDelete = async () => {
+    if (!requireAuthentication()) return
     if (!categoryToDelete || isDeleting) return
 
     setIsDeleting(true)
@@ -158,6 +169,7 @@ function Categories() {
                       <button
                         type="button"
                         onClick={() => {
+                          if (!requireAuthentication()) return
                           setDeleteError('')
                           setCategoryToDelete(category)
                         }}

@@ -1,8 +1,14 @@
 import { fireEvent, render, screen } from '@testing-library/react'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { MemoryRouter } from 'react-router-dom'
+import { MemoryRouter, useLocation } from 'react-router-dom'
 import Products from './Products.jsx'
 import { cloneProduct, deleteProduct, getProducts } from '../../services/product.service.js'
+
+const authState = vi.hoisted(() => ({ isAuthenticated: true }))
+
+vi.mock('../../context/AuthContext.jsx', () => ({
+  useAuth: () => authState,
+}))
 
 vi.mock('../../services/product.service.js', () => ({
   getProducts: vi.fn(),
@@ -10,9 +16,15 @@ vi.mock('../../services/product.service.js', () => ({
   deleteProduct: vi.fn(),
 }))
 
+function CurrentPath() {
+  const location = useLocation()
+  return <output data-testid="current-path">{location.pathname}</output>
+}
+
 describe('Products', () => {
   beforeEach(() => {
     vi.clearAllMocks()
+    authState.isAuthenticated = true
     getProducts.mockResolvedValue({
       data: {
         data: [
@@ -73,5 +85,27 @@ describe('Products', () => {
     fireEvent.click(screen.getByRole('button', { name: /delete product/i }))
 
     expect(deleteProduct).toHaveBeenCalledWith('product-1')
+  })
+
+  it('redirects unauthenticated clone and delete actions without calling mutation APIs', async () => {
+    authState.isAuthenticated = false
+
+    render(
+      <MemoryRouter initialEntries={['/products']}>
+        <Products />
+        <CurrentPath />
+      </MemoryRouter>,
+    )
+
+    fireEvent.click(await screen.findByRole('button', { name: /clone product homemade chakli/i }))
+
+    expect(screen.getByTestId('current-path')).toHaveTextContent('/authenticate')
+    expect(cloneProduct).not.toHaveBeenCalled()
+
+    fireEvent.click(screen.getByRole('button', { name: /delete product homemade chakli/i }))
+
+    expect(screen.getByTestId('current-path')).toHaveTextContent('/authenticate')
+    expect(screen.queryByRole('dialog', { name: /delete product/i })).not.toBeInTheDocument()
+    expect(deleteProduct).not.toHaveBeenCalled()
   })
 })

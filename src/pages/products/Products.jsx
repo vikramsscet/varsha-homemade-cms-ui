@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { Image as ImageIcon, Plus, RefreshCw, X } from 'lucide-react'
+import { useAuth } from '../../context/AuthContext.jsx'
 import { cloneProduct, deleteProduct, getProducts } from '../../services/product.service.js'
 
 const PAGE_SIZE = 20
@@ -38,6 +39,9 @@ function ProductStatus({ status }) {
 }
 
 function Products() {
+  const { isAuthenticated } = useAuth()
+  const location = useLocation()
+  const navigate = useNavigate()
   const [page, setPage] = useState(1)
   const [refreshKey, setRefreshKey] = useState(0)
   const [products, setProducts] = useState([])
@@ -52,6 +56,12 @@ function Products() {
   const [isDeleting, setIsDeleting] = useState(false)
   const [successMessage, setSuccessMessage] = useState('')
   const activeModal = cloneTarget || deleteTarget
+
+  const requireAuthentication = () => {
+    if (isAuthenticated) return true
+    navigate('/authenticate', { state: { from: location } })
+    return false
+  }
 
   useEffect(() => {
     let isCurrent = true
@@ -96,6 +106,7 @@ function Products() {
   const lastItem = Math.min(pagination.page * pagination.limit, pagination.total)
 
   const handleCloneProduct = async () => {
+    if (!requireAuthentication()) return
     if (!cloneTarget?.id) return
 
     setIsCloning(true)
@@ -121,6 +132,7 @@ function Products() {
   }
 
   const handleDeleteProduct = async () => {
+    if (!requireAuthentication()) return
     if (!deleteTarget?.id) return
 
     setIsDeleting(true)
@@ -288,6 +300,7 @@ function Products() {
                             type="button"
                             aria-label={`Clone product ${product.title}`}
                             onClick={() => {
+                              if (!requireAuthentication()) return
                               setCloneError('')
                               setCloneTarget(product)
                             }}
@@ -299,6 +312,7 @@ function Products() {
                             type="button"
                             aria-label={`Delete product ${product.title}`}
                             onClick={() => {
+                              if (!requireAuthentication()) return
                               setDeleteError('')
                               setDeleteTarget(product)
                             }}
