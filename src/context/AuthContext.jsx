@@ -50,8 +50,8 @@ export function AuthProvider({ children }) {
     }
 
     setAccessToken(tokenData.access_token)
-  setAuthExpired(false)
-  setApiMessage('')
+    setAuthExpired(false)
+    setApiMessage('')
     setAuthState({
       accessToken: tokenData.access_token,
       tokenType: tokenData.token_type,

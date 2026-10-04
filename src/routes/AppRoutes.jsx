@@ -18,7 +18,7 @@ function AppRoutes() {
         <ApiResponseHandler />
         <Routes>
           <Route path="/authenticate" element={<Authenticate />} />
-          <Route element={<CmsLayout />}>
+          <Route element={<RequireAuth><CmsLayout /></RequireAuth>}>
             <Route path="/" element={<Navigate to="/dashboard" replace />} />
             <Route path="/dashboard" element={<Dashboard />} />
             <Route path="/categories" element={<Categories />} />
