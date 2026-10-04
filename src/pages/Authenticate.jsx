@@ -5,7 +5,7 @@ import { useLocation, useNavigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext.jsx'
 
 function Authenticate() {
-  const { authenticate } = useAuth()
+  const { authenticate, authExpired } = useAuth()
   const location = useLocation()
   const navigate = useNavigate()
   const [showSecret, setShowSecret] = useState(false)
@@ -35,6 +35,12 @@ function Authenticate() {
           <h1 className="text-2xl font-semibold">Connect to your CMS</h1>
           <p className="text-sm leading-6 text-muted">Enter your client credentials to continue.</p>
         </div>
+
+        {authExpired && (
+          <p className="mb-5 rounded-md border border-warning/30 bg-warning/10 px-3 py-2 text-sm text-text" role="alert">
+            Your authentication has expired. Please authenticate again.
+          </p>
+        )}
 
         <form onSubmit={handleSubmit(onSubmit)} noValidate className="space-y-5">
           <div className="space-y-2">

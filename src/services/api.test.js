@@ -1,6 +1,11 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import api from './api.js'
-import { clearAccessToken, setAccessToken } from './access-token.js'
+import {
+  clearAccessToken,
+  getAccessToken,
+  setAccessToken,
+  subscribeToAuthEvents,
+} from './access-token.js'
 import {
   createProduct,
   deleteProduct,
@@ -35,6 +40,17 @@ function captureRequests() {
       headers: {},
       config,
     }
+  })
+}
+
+function rejectWithStatus(status) {
+  sentRequests = []
+  api.defaults.adapter = vi.fn(async (config) => {
+    sentRequests.push(config)
+    const error = new Error(`Request failed with status code ${status}`)
+    error.config = config
+    error.response = { status, data: {}, config }
+    throw error
   })
 }
 
@@ -86,5 +102,45 @@ describe('API authorization interceptor', () => {
 
     expect(sentRequests[0].url).toBe('/oauth/token')
     expect(sentRequests[0].headers.has('Authorization')).toBe(false)
+  })
+
+  it('clears the current token on a protected 401 without retrying', async () => {
+    rejectWithStatus(401)
+    setAccessToken('expired-access-token')
+    const events = []
+    const unsubscribe = subscribeToAuthEvents((event) => events.push(event))
+
+    await expect(getProducts()).rejects.toThrow(/status code 401/i)
+
+    expect(sentRequests).toHaveLength(1)
+    expect(getAccessToken()).toBeNull()
+    expect(events).toEqual([{ type: 'expired' }])
+    unsubscribe()
+  })
+
+  it('does not expire authentication on 403 and publishes a permission event', async () => {
+    rejectWithStatus(403)
+    setAccessToken('valid-access-token')
+    const events = []
+    const unsubscribe = subscribeToAuthEvents((event) => events.push(event))
+
+    await expect(getProducts()).rejects.toThrow(/status code 403/i)
+
+    expect(getAccessToken()).toBe('valid-access-token')
+    expect(events).toEqual([{ type: 'forbidden' }])
+    unsubscribe()
+  })
+
+  it('does not expire auth state for a rejected OAuth token request', async () => {
+    rejectWithStatus(401)
+    setAccessToken('valid-access-token')
+    const events = []
+    const unsubscribe = subscribeToAuthEvents((event) => events.push(event))
+
+    await expect(requestAccessToken('client-id', 'client-secret')).rejects.toThrow(/status code 401/i)
+
+    expect(getAccessToken()).toBe('valid-access-token')
+    expect(events).toEqual([])
+    unsubscribe()
   })
 })
