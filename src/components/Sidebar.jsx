@@ -1,10 +1,11 @@
-import { Folder, LayoutDashboard, Package } from 'lucide-react'
+import { Folder, LayoutDashboard, Package, Users } from 'lucide-react'
 import { NavLink } from 'react-router-dom'
 
 const navigationItems = [
   { label: 'Dashboard', icon: LayoutDashboard, to: '/dashboard', end: true },
   { label: 'Categories', icon: Folder, to: '/categories' },
   { label: 'Products', icon: Package, to: '/products' },
+  { label: 'Users', icon: Users, to: '/users' },
 ]
 
 function Sidebar() {
