@@ -146,6 +146,13 @@ function Users() {
                         >
                           Cart
                         </Link>
+                        <Link
+                          to={`/users/${user.id}/orders`}
+                          aria-label={`View orders for ${userLabel(user)}`}
+                          className="font-medium text-primary hover:text-primary-hover"
+                        >
+                          Orders
+                        </Link>
                       </div>
                     </td>
                   </tr>

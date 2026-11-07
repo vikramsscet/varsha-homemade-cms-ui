@@ -10,6 +10,9 @@ import Products from '../pages/products/Products.jsx'
 import Users from '../pages/users/Users.jsx'
 import UserDetail from '../pages/users/UserDetail.jsx'
 import UserCart from '../pages/users/UserCart.jsx'
+import Orders from '../pages/orders/Orders.jsx'
+import UserOrders from '../pages/orders/UserOrders.jsx'
+import OrderDetails from '../pages/orders/OrderDetails.jsx'
 import Authenticate from '../pages/Authenticate.jsx'
 import RequireAuth from '../components/RequireAuth.jsx'
 import ApiResponseHandler from '../components/ApiResponseHandler.jsx'
@@ -33,6 +36,9 @@ function AppRoutes() {
             <Route path="/users" element={<Users />} />
             <Route path="/users/:id" element={<RequireAuth><UserDetail /></RequireAuth>} />
             <Route path="/users/:id/cart" element={<RequireAuth><UserCart /></RequireAuth>} />
+            <Route path="/users/:id/orders" element={<RequireAuth><UserOrders /></RequireAuth>} />
+            <Route path="/orders" element={<Orders />} />
+            <Route path="/orders/:orderId" element={<RequireAuth><OrderDetails /></RequireAuth>} />
             <Route path="*" element={<Navigate to="/dashboard" replace />} />
           </Route>
         </Routes>
